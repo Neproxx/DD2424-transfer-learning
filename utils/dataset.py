@@ -80,6 +80,6 @@ class VGGFace2Dataset(Dataset):
             sample["image"] = rgb_to_grayscale(sample["image"])
             sample["label"] = img_orig.reshape(-1)
         if self.version == "rotated_grayscale":
-            sample["label"] = torch.cat((sample["label"], img_orig.reshape(-1)))
+            sample["label"] = torch.cat((rotation_degrees, img_orig.reshape(-1)))
 
         return sample
