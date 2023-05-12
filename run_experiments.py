@@ -20,7 +20,7 @@ Explanation of the config:
     - pretrain.lr: Learning rate for pretraining
     - pretrain.batch_size: Batch size for pretraining
 """
-train_config = {
+train_config_base = {
     "run_label": "MyExperimentName",
     "finetune": {
         "use_fraction": 1,
@@ -32,13 +32,37 @@ train_config = {
     "pretrain": {
         # Note from Marcel: An epoch on the full dataset takes roughly 1h on my RTX 2070s
         # and a batchsize of 16 takes up 7GB of memory on my GPU (every additional sample adds ~200MB of memory usage)
+        # That is only for the rotation dataset though, the grayscale dataset we need to half the batchsize for a similar memory usage
         # In general, the pretraining is much more demanding than the finetuning (due to the larger dataset size)
         "use_fraction": 1,
-        "task": "rotated",
+        "task": None,
         "epochs": 5,
         "lr": 0.0001,
-        "batch_size": 16,
+        "batch_size": 12,
     },
 }
 
-model = train_convnext(train_config=train_config)
+tc_no_pretrain = train_config_base.copy()
+tc_no_pretrain["run_label"] = "without_pretraining"
+tc_no_pretrain["pretrain"]["task"] = None
+
+tc_rotated = train_config_base.copy()
+tc_rotated["run_label"] = "rotated"
+tc_rotated["pretrain"]["task"] = "rotated"
+tc_rotated["pretrain"]["epochs"] = 5
+
+tc_grayscale = train_config_base.copy()
+tc_grayscale["run_label"] = "grayscale"
+tc_grayscale["pretrain"]["task"] = "grayscale"
+tc_grayscale["pretrain"]["epochs"] = 5
+
+tc_rotated_grayscale = train_config_base.copy()
+tc_rotated_grayscale["run_label"] = "rotated_grayscale"
+tc_rotated_grayscale["pretrain"]["task"] = "rotated_grayscale"
+tc_rotated_grayscale["pretrain"]["epochs"] = 5
+
+# NOTE: Uncomment the experiment you want to run
+# train_convnext(train_config=tc_no_pretrain)
+# train_convnext(train_config=tc_rotated)
+# train_convnext(train_config=tc_grayscale)
+# train_convnext(train_config=tc_rotated_grayscale)

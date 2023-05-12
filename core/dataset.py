@@ -62,9 +62,9 @@ class VGGFace2Dataset(Dataset):
         elif self.version == "rotated":
             return 4
         elif self.version == "grayscale":
-            return 224 * 224
+            return 3 * 224 * 224
         elif self.version == "rotated_grayscale":
-            return 4 + 224 * 224
+            return 4 + 3 * 224 * 224
         else:
             return None
 
@@ -104,7 +104,9 @@ class VGGFace2Dataset(Dataset):
             sample["image"] = rotated_image
             sample["label"] = rotation_degrees
         if self.version == "grayscale" or self.version == "rotated_grayscale":
-            sample["image"] = rgb_to_grayscale(sample["image"])
+            # Gray scale image is 1-channel, but we need 3-channel for the model
+            image_gray = rgb_to_grayscale(sample["image"])
+            sample["image"] = torch.cat((image_gray, image_gray, image_gray), dim=0)
             sample["label"] = img_orig.reshape(-1)
         if self.version == "rotated_grayscale":
             sample["label"] = torch.cat((rotation_degrees, img_orig.reshape(-1)))
