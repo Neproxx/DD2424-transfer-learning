@@ -400,10 +400,10 @@ class MultiTaskLoss(Module):
         self.regression_loss = MSELoss()
 
     def forward(self, pred, target):
-        clf_pred = pred[:, : self.clf_size]
-        reg_pred = pred[:, self.clf_size :]
+        clf_pred = pred[0]
+        reg_pred = pred[1]
 
-        clf_target = target[:, : self.clf_size].long()
+        clf_target = target[:, : self.clf_size]
         reg_target = target[:, self.clf_size :]
 
         class_loss = self.classification_loss(clf_pred, clf_target)

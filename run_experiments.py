@@ -1,3 +1,4 @@
+from copy import deepcopy
 from core.training import train_convnext
 
 """
@@ -42,21 +43,21 @@ train_config_base = {
     },
 }
 
-tc_no_pretrain = train_config_base.copy()
+tc_no_pretrain = deepcopy(train_config_base)
 tc_no_pretrain["run_label"] = "without_pretraining"
 tc_no_pretrain["pretrain"]["task"] = None
 
-tc_rotated = train_config_base.copy()
+tc_rotated = deepcopy(train_config_base)
 tc_rotated["run_label"] = "rotated"
 tc_rotated["pretrain"]["task"] = "rotated"
 tc_rotated["pretrain"]["epochs"] = 5
 
-tc_grayscale = train_config_base.copy()
+tc_grayscale = deepcopy(train_config_base)
 tc_grayscale["run_label"] = "grayscale"
 tc_grayscale["pretrain"]["task"] = "grayscale"
 tc_grayscale["pretrain"]["epochs"] = 5
 
-tc_rotated_grayscale = train_config_base.copy()
+tc_rotated_grayscale = deepcopy(train_config_base)
 tc_rotated_grayscale["run_label"] = "rotated_grayscale"
 tc_rotated_grayscale["pretrain"]["task"] = "rotated_grayscale"
 tc_rotated_grayscale["pretrain"]["epochs"] = 5
