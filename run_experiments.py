@@ -24,6 +24,7 @@ Explanation of the config:
 train_config_base = {
     "run_label": "MyExperimentName",
     "finetune": {
+        # A fraction of 1 corresponds to 10,000 training samples (and 5,000 for validation test each)
         "use_fraction": 1,
         "epochs": 12,
         "lr": 0.0001,
@@ -35,7 +36,12 @@ train_config_base = {
         # and a batchsize of 16 takes up 7GB of memory on my GPU (every additional sample adds ~200MB of memory usage)
         # That is only for the rotation dataset though, the grayscale dataset we need to half the batchsize for a similar memory usage
         # In general, the pretraining is much more demanding than the finetuning (due to the larger dataset size)
-        "use_fraction": 1,
+        # In total there are 171960 samples, so fractions correspond like this
+        # (make sure to adapt the number of epochs accordingly for a fair comparison):
+        "use_fraction": 0.072691,  # 10,000 samples
+        # "use_fraction": 0.174461, # 30,000 samples
+        # "use_fraction": 0.348922, # 60,000 samples
+        # "use_fraction": 0.581531, # 100,000 samples
         "task": None,
         "epochs": 3,
         "lr": 0.0001,
