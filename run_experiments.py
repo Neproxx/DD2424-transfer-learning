@@ -25,7 +25,7 @@ train_config_base = {
     "run_label": "MyExperimentName",
     "finetune": {
         "use_fraction": 1,
-        "epochs": 15,
+        "epochs": 12,
         "lr": 0.0001,
         "train_size": 1 / 3,
         "batch_size": 16,
@@ -37,7 +37,7 @@ train_config_base = {
         # In general, the pretraining is much more demanding than the finetuning (due to the larger dataset size)
         "use_fraction": 1,
         "task": None,
-        "epochs": 5,
+        "epochs": 3,
         "lr": 0.0001,
         "batch_size": 12,
     },
@@ -50,17 +50,17 @@ tc_no_pretrain["pretrain"]["task"] = None
 tc_rotated = deepcopy(train_config_base)
 tc_rotated["run_label"] = "rotated"
 tc_rotated["pretrain"]["task"] = "rotated"
-tc_rotated["pretrain"]["epochs"] = 5
+tc_rotated["pretrain"]["epochs"] = 3
 
 tc_grayscale = deepcopy(train_config_base)
 tc_grayscale["run_label"] = "grayscale"
 tc_grayscale["pretrain"]["task"] = "grayscale"
-tc_grayscale["pretrain"]["epochs"] = 5
+tc_grayscale["pretrain"]["epochs"] = 3
 
 tc_rotated_grayscale = deepcopy(train_config_base)
 tc_rotated_grayscale["run_label"] = "rotated_grayscale"
 tc_rotated_grayscale["pretrain"]["task"] = "rotated_grayscale"
-tc_rotated_grayscale["pretrain"]["epochs"] = 5
+tc_rotated_grayscale["pretrain"]["epochs"] = 3
 
 # NOTE: Uncomment the experiment you want to run
 # train_convnext(train_config=tc_no_pretrain)

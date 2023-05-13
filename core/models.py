@@ -17,12 +17,14 @@ class ConvNeXt(nn.Module):
     that have 10, 20, and 25 output neurons, respectively.
     """
 
-    def __init__(self, output_sizes: Union[list, int]):
+    def __init__(self, output_sizes: Union[list, int], device):
         """
         Args:
             output_sizes (list or int): An int or list of output sizes for each output layer (one per task).
         """
         super(ConvNeXt, self).__init__()
+
+        self.device = device
 
         if isinstance(output_sizes, int):
             output_sizes = [output_sizes]
@@ -47,12 +49,14 @@ class ConvNeXt(nn.Module):
         # NOTE: The LayerNorm2d layer is throws an error which may be due to version
         # difference. Therefore, we just remove it for now.
         # self.norm_layer = partial(
-        #    LayerNorm2d, eps=1e-6, dtype=torch.float32, device=self.get_device()
+        #    LayerNorm2d, eps=1e-6, dtype=torch.float32, device=self.device()
         # )
         self.flatten = nn.Flatten(1)
         self.output_layers = nn.ModuleList(
             [nn.Linear(1024, output_size) for output_size in output_sizes]
         )
+
+        self.to(self.device)
 
     def forward(self, x):
         # Operations that we have to repeat, because we replaced the classifier
@@ -77,10 +81,5 @@ class ConvNeXt(nn.Module):
         Args:
             num_classes (int): Number of output neurons.
         """
-        device = self.get_device()
-        linear = nn.Linear(1024, num_classes, device)
+        linear = nn.Linear(1024, num_classes, device=self.device)
         self.output_layers = nn.ModuleList([linear])
-
-    def get_device(self):
-        # Check what device the first parameter is on and use that for the new layer
-        return next(self.parameters()).device

@@ -7,6 +7,7 @@ from datetime import datetime
 import torch
 import torch.optim as optim
 from torch.nn import CrossEntropyLoss, MSELoss, Module
+from torch.nn.utils import clip_grad_norm_
 from torch.utils.data import DataLoader, random_split
 
 from core.dataset import VGGFace2Dataset
@@ -129,8 +130,7 @@ def train_convnext(train_config):
             meta,
         )
     else:
-        model = ConvNeXt(meta["num_ft_classes"])
-        model.to(device)
+        model = ConvNeXt(meta["num_ft_classes"], device)
 
     ### Fine-tune the model
     model = finetune_convnext(model, train_config, dataloaders)
@@ -165,13 +165,12 @@ def pretrain_convnext(
     if pretrain_task == "rotated_grayscale":
         output_sizes = [4, output_sizes - 4]
 
-    model = ConvNeXt(output_sizes)
-    model.to(device)
+    model = ConvNeXt(output_sizes, device)
 
     criterion = get_loss_func(pretrain_task)
     optimizer = optim.Adam(model.parameters(), train_config["pretrain"]["lr"])
     n_epochs = train_config["pretrain"]["epochs"]
-    train_losses = []
+    train_losses_raw = []
     # for epoch in tqdm(range(n_epochs)):
     for epoch in range(n_epochs):
         model.train()
@@ -180,7 +179,7 @@ def pretrain_convnext(
             inputs = batch["image"]
             labels = batch["label"]
             loss = perform_step(model, criterion, inputs, labels, optimizer)
-            train_losses.append(loss)
+            train_losses_raw.append(loss)
         print(f"Epoch: {epoch + 1}/{n_epochs}, Loss: {loss:.4f}")
 
     # Replace output layers with a fully connected layer for the fine-tuning task
@@ -193,20 +192,21 @@ def pretrain_convnext(
     # Create and save plots
     fname = "pretraining_train_loss_curve.png"
     plot_results(
-        train=train_losses,
+        train=get_smooth_loss(train_losses_raw),
         val=[],
         title=None,
         # title="Training loss during pre-training",
         xlabel="Update step",
-        ylabel="Loss",
+        ylabel="Loss (smoothed)",
         save_path=os.path.join(base_path, fname),
     )
 
     # Save raw results for potential later re-plotting
     fname = "pretraining_train_loss_curve.pkl"
     with open(os.path.join(base_path, fname), "wb") as f:
-        pickle.dump(train_losses, f)
+        pickle.dump(train_losses_raw, f)
 
+    print("Pretraining finished.")
     return model
 
 
@@ -224,6 +224,7 @@ def finetune_convnext(
         dataloaders (dict): A dictionary containing the dataloaders for
             training, validation and testing.
     """
+    print("Starting fine-tuning...")
     criterion = get_loss_func("classification")
     optimizer = optim.Adam(model.parameters(), train_config["finetune"]["lr"])
     n_epochs = train_config["finetune"]["epochs"]
@@ -296,6 +297,8 @@ def finetune_convnext(
             f,
         )
 
+    print("Fine-tuning finished.")
+
 
 def perform_step(model, criterion, inputs, labels, optimizer=None):
     """
@@ -305,9 +308,12 @@ def perform_step(model, criterion, inputs, labels, optimizer=None):
     inputs, labels = inputs.to(device), labels.to(device)
     outputs = model(inputs)
     loss = criterion(outputs, labels)
+
+    # Add gradient clipping
     if optimizer is not None:
         optimizer.zero_grad()
         loss.backward()
+        clip_grad_norm_(model.parameters(), max_norm=1)
         optimizer.step()
     return loss.item()
 
@@ -419,3 +425,12 @@ class MultiTaskLoss(Module):
             raise NotImplementedError("Only equal strategy is implemented")
 
         return total_loss
+
+
+def get_smooth_loss(losses):
+    # Applies an exponential moving average to the losses for smoothing
+    alpha = 0.9
+    smooth_loss = [losses[0]]
+    for i, loss in enumerate(losses[1:]):
+        smooth_loss.append(alpha * smooth_loss[i] + (1 - alpha) * loss)
+    return smooth_loss
