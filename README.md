@@ -15,6 +15,54 @@ In this project, we use the VGGFace2 dataset [1] that contains images of faces. 
 3. `grayscale`: The dataset with grayscale images. As labels, it contains the original but flattened images.
 4. `rotated_grayscale`: A combination of the two above. The images are rotated and grayscale. To get the labels for this dataset, the labels of the individual two approaches were concatenated. The first four values represent the onehot encoding for the rotation, the remaining ones are the original and flattened image.
 
+## Training on Google Cloud
+
+Steps to follow for running the experiments on a Google Cloud instance that is already running:
+
+1. SSH into the instance.
+2. Clone the repository and cd into it.
+
+```console
+git clone https://github.com/Neproxx/DD2424-transfer-learning.git
+cd DD2424-transfer-learning
+```
+
+3. Run the following commands to download the data from google drive and put them in the right spots:
+
+```console
+pip install gdown
+
+gdown --folder https://drive.google.com/drive/folders/1pzyStORojl4jei89uto6lXZEMTuzoKSQ
+
+mkdir -p data/preprocessed
+
+tar -xzf datasets/vggface2_train_prep.tar.gz -C data/preprocessed/
+
+tar -xzf datasets/vggface2_test_prep.tar.gz -C data/preprocessed/
+```
+
+4. Adapt the training configuration in run_experiments.py to your needs.
+
+5. Run the experiment with
+
+```console
+python run_experiments.py
+```
+
+or alternatively with the following command that logs the output to a file nohup.out and allows you to safely close the ssh connection without interrupting the training (do not press ctrl+z though)
+
+```console
+nohup python run_experiments.py &
+```
+
+6. Wait until training is done and then download the results from the instance using a local Google cloud SDK shell and the following command. You have to `replace` the `project, zone, instance name and exact path` on the remote machine with your own. Alternatively, you can copy most of the command directly from the google cloud website.
+
+```console
+gcloud compute scp --recurse --project dl-in-ds --zone us-west3-b deeplearning-rotated-vm:/home/Marcel/DD2424-transfer-learning/results ./results
+
+gcloud compute scp --project dl-in-ds --zone us-west3-b deeplearning-rotated-vm:/home/Marcel/DD2424-transfer-learning/nohup.out ./nohup.out
+```
+
 ## References
 
 [1] Cao, Qiong, et al. "VGGFace2: A dataset for recognising faces across pose and age." 2018 13th IEEE international conference on automatic face & gesture recognition (FG 2018). IEEE, 2018.

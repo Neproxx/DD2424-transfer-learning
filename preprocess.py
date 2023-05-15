@@ -1,6 +1,6 @@
 import os
 import tarfile
-from utils.preprocessing import extract_if_not_already, preprocess_images
+from core.preprocessing import extract_if_not_already, preprocess_images
 
 # Specify the path to the raw tar files you downloaded
 # Files can be downloaded from here: https://academictorrents.com/details/535113b8395832f09121bc53ac85d7bc8ef6fa5b
