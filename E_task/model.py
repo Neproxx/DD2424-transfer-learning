@@ -9,9 +9,9 @@ class OxfordPetsModel(nn.Module):
         super().__init__()
 
         self.num_classes = num_classes
-        # self.model = resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
+        self.model = resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
         # self.model = resnet34(weights=ResNet34_Weights.IMAGENET1K_V1)
-        self.model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
+        # self.model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
 
         for param in self.model.parameters():
             param.requires_grad = False
