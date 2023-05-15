@@ -20,6 +20,7 @@ Explanation of the config:
     - pretrain.epochs: Number of epochs to train for during pretraining
     - pretrain.lr: Learning rate for pretraining
     - pretrain.batch_size: Batch size for pretraining
+    - pretrain.fresh_init: Whether to initialize the model with pretrained weights or from scratch.
 """
 train_config_base = {
     "run_label": "MyExperimentName",
@@ -46,6 +47,7 @@ train_config_base = {
         "epochs": 3,
         "lr": 0.0001,
         "batch_size": 12,
+        "fresh_init": False,
     },
 }
 
@@ -56,17 +58,14 @@ tc_no_pretrain["pretrain"]["task"] = None
 tc_rotated = deepcopy(train_config_base)
 tc_rotated["run_label"] = "rotated"
 tc_rotated["pretrain"]["task"] = "rotated"
-tc_rotated["pretrain"]["epochs"] = 3
 
 tc_grayscale = deepcopy(train_config_base)
 tc_grayscale["run_label"] = "grayscale"
 tc_grayscale["pretrain"]["task"] = "grayscale"
-tc_grayscale["pretrain"]["epochs"] = 3
 
 tc_rotated_grayscale = deepcopy(train_config_base)
 tc_rotated_grayscale["run_label"] = "rotated_grayscale"
 tc_rotated_grayscale["pretrain"]["task"] = "rotated_grayscale"
-tc_rotated_grayscale["pretrain"]["epochs"] = 3
 
 # NOTE: Uncomment the experiment you want to run
 # train_convnext(train_config=tc_no_pretrain)

@@ -130,7 +130,11 @@ def train_convnext(train_config):
             meta,
         )
     else:
-        model = ConvNeXt(meta["num_ft_classes"], device)
+        model = ConvNeXt(
+            meta["num_ft_classes"],
+            device=device,
+            fresh_init=train_config["pretrain"]["fresh_init"],
+        )
 
     ### Fine-tune the model
     model = finetune_convnext(model, train_config, dataloaders)
@@ -165,7 +169,9 @@ def pretrain_convnext(
     if pretrain_task == "rotated_grayscale":
         output_sizes = [4, output_sizes - 4]
 
-    model = ConvNeXt(output_sizes, device)
+    model = ConvNeXt(
+        output_sizes, device=device, fresh_init=train_config["pretrain"]["fresh_init"]
+    )
 
     criterion = get_loss_func(pretrain_task)
     optimizer = optim.Adam(model.parameters(), train_config["pretrain"]["lr"])
@@ -309,7 +315,6 @@ def perform_step(model, criterion, inputs, labels, optimizer=None):
     outputs = model(inputs)
     loss = criterion(outputs, labels)
 
-    # Add gradient clipping
     if optimizer is not None:
         optimizer.zero_grad()
         loss.backward()

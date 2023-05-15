@@ -17,21 +17,33 @@ class ConvNeXt(nn.Module):
     that have 10, 20, and 25 output neurons, respectively.
     """
 
-    def __init__(self, output_sizes: Union[list, int], device):
+    def __init__(
+        self,
+        output_sizes: Union[list, int],
+        device: torch.device,
+        fresh_init: bool = True,
+    ):
         """
         Args:
             output_sizes (list or int): An int or list of output sizes for each output layer (one per task).
+            device (torch.device): The device to use for the model.
+            fresh_init (bool): If True, the model will be initialized with random weights.
+                If False, the model will be initialized with weights pretrained on ImageNet.
         """
         super(ConvNeXt, self).__init__()
 
         self.device = device
+        self.use_imagenet_weights = fresh_init
 
         if isinstance(output_sizes, int):
             output_sizes = [output_sizes]
 
         assert len(output_sizes) > 0, "At least one output size must be specified"
 
-        raw_model = convnext_base(weights=ConvNeXt_Base_Weights.IMAGENET1K_V1)
+        if fresh_init:
+            raw_model = convnext_base()
+        else:
+            raw_model = convnext_base(weights=ConvNeXt_Base_Weights.IMAGENET1K_V1)
         self.features = raw_model.features
         self.avgpool = raw_model.avgpool
 
@@ -58,7 +70,7 @@ class ConvNeXt(nn.Module):
 
         self.to(self.device)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         # Operations that we have to repeat, because we replaced the classifier
         x = self.features(x)
         x = self.avgpool(x)
