@@ -58,7 +58,7 @@ nohup python run_experiments.py &
 6. Wait until training is done and then download the results from the instance using a local Google cloud SDK shell and the following command. You have to `replace` the `project, zone, instance name and exact path` on the remote machine with your own. Alternatively, you can copy most of the command directly from the google cloud website.
 
 ```console
-gcloud compute scp --recurse --project dl-in-ds --zone us-west3-b deeplearning-rotated-vm:/home/Marcel/DD2424-transfer-learning/results/ ./results
+gcloud compute scp --recurse --project dl-in-ds --zone us-west3-b deeplearning-rotated-vm:/home/Marcel/DD2424-transfer-learning/results ./results
 
 gcloud compute scp --project dl-in-ds --zone us-west3-b deeplearning-rotated-vm:/home/Marcel/DD2424-transfer-learning/nohup.out ./nohup.out
 ```

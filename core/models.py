@@ -42,7 +42,9 @@ class ConvNeXt(nn.Module):
 
         if fresh_init:
             raw_model = convnext_base()
+            print(f"Initializing ConvNeXt with random weights")
         else:
+            print(f"Initializing ConvNeXt with weights from pretraining on ImageNet")
             raw_model = convnext_base(weights=ConvNeXt_Base_Weights.IMAGENET1K_V1)
         self.features = raw_model.features
         self.avgpool = raw_model.avgpool
