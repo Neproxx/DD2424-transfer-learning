@@ -30,7 +30,7 @@ train_config_base = {
     "finetune": {
         # A fraction of 1 corresponds to 10,000 training samples (and 5,000 for validation test each)
         "use_fraction": 1,
-        "epochs": 12,
+        "epochs": 15,
         "lr": 0.0001,
         "train_size": 1 / 3,
         "batch_size": 16,
@@ -50,6 +50,7 @@ train_config_base = {
         "task": None,
         "epochs": 5,
         "lr": 0.0001,
+        "batch_size": 12,
     },
     "fresh_init": False,
     "only_last_layers_tunable": False,
