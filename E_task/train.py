@@ -129,6 +129,28 @@ def finetune_layers(dataset, device):
         # write dict to txt file
         with open('E_task/layer_accuracy.txt', 'w') as f:
             f.write(str(layer_accuracy))
+
+def fine_tune_last_10(dataset, device):
+    num_layers_to_unfreeze = [i for i in range(0, 10)]
+    number_seeds = [i for i in range(1, 5)]
+    layer_seed_accuracy = {}
+
+    for seed in number_seeds:
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        print(f'Finetuning with seed {seed}')
+        layer_accuracy = {}
+        for num_layers in num_layers_to_unfreeze:
+            print(f'Finetuning last {num_layers} layers')
+            model = OxfordPetsModel(num_classes=len(dataset.classes), num_layers_to_unfreeze=num_layers).to(device)
+            accuracy = train(model, num_epochs=10, dataset=dataset, device=device)
+            # write dict with seed as key and dict with layer accuracy as value
+            layer_accuracy[num_layers] = accuracy
+        layer_seed_accuracy[seed] = layer_accuracy
+        # write dict to txt file
+        with open('E_task/first_10_layer_accuracy.txt', 'w') as f:
+            f.write(str(layer_seed_accuracy))
     
 if __name__ == '__main__':
     random.seed(42)
@@ -148,6 +170,7 @@ if __name__ == '__main__':
     # model = OxfordPetsModel(num_classes=len(dataset.classes), num_layers_to_unfreeze=0).to(device)
     # train(model, num_epochs=10, dataset=dataset, device=device)
 
-    finetune_layers(dataset, device)
+    # finetune_layers(dataset, device)
+    fine_tune_last_10(dataset, device)
 
     
