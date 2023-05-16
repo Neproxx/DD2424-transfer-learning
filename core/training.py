@@ -133,7 +133,7 @@ def train_convnext(train_config):
         model = ConvNeXt(
             meta["num_ft_classes"],
             device=device,
-            fresh_init=train_config["pretrain"]["fresh_init"],
+            fresh_init=train_config["fresh_init"],
         )
 
     ### Fine-tune the model
@@ -170,7 +170,7 @@ def pretrain_convnext(
         output_sizes = [4, output_sizes - 4]
 
     model = ConvNeXt(
-        output_sizes, device=device, fresh_init=train_config["pretrain"]["fresh_init"]
+        output_sizes, device=device, fresh_init=train_config["fresh_init"]
     )
 
     criterion = get_loss_func(pretrain_task)
@@ -238,6 +238,7 @@ def finetune_convnext(
     loss_train_per_update = []
     acc_train_per_epoch = []
     acc_val_per_epoch = []
+    acc_test_per_epoch = []
     for epoch in tqdm(range(n_epochs)):
         model.train()
         for batch in dataloaders["train_loader"]:
@@ -252,6 +253,9 @@ def finetune_convnext(
                 compute_accuracy(model, dataloaders["train_loader"])
             )
             acc_val_per_epoch.append(compute_accuracy(model, dataloaders["val_loader"]))
+            acc_test_per_epoch.append(
+                compute_accuracy(model, dataloaders["test_loader"])
+            )
 
         print(
             f"Epoch: {epoch + 1}/{n_epochs}, loss: {loss:.4f}, accuracy train: {acc_train_per_epoch[-1]:.4f}, accuracy val: {acc_val_per_epoch[-1]:.4f}"
@@ -298,6 +302,7 @@ def finetune_convnext(
             {
                 "train_acc": acc_train_per_epoch,
                 "val_acc": acc_val_per_epoch,
+                "test_acc": acc_test_per_epoch,
                 "train_loss": loss_train_per_update,
             },
             f,

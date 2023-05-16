@@ -22,6 +22,7 @@ class ConvNeXt(nn.Module):
         output_sizes: Union[list, int],
         device: torch.device,
         fresh_init: bool = True,
+        only_last_layers_tunable: bool = False,
     ):
         """
         Args:
@@ -34,6 +35,7 @@ class ConvNeXt(nn.Module):
 
         self.device = device
         self.use_imagenet_weights = fresh_init
+        self.only_last_layers_tunable = only_last_layers_tunable
 
         if isinstance(output_sizes, int):
             output_sizes = [output_sizes]
@@ -48,6 +50,12 @@ class ConvNeXt(nn.Module):
             raw_model = convnext_base(weights=ConvNeXt_Base_Weights.IMAGENET1K_V1)
         self.features = raw_model.features
         self.avgpool = raw_model.avgpool
+
+        if only_last_layers_tunable:
+            for param in self.features.parameters():
+                param.requires_grad = False
+            for param in self.features[-1].parameters():
+                param.requires_grad = True
 
         # ConvNeXt has a 'classifier' module at the end that looks like this:
         # Sequential(
