@@ -20,7 +20,10 @@ Explanation of the config:
     - pretrain.epochs: Number of epochs to train for during pretraining
     - pretrain.lr: Learning rate for pretraining
     - pretrain.batch_size: Batch size for pretraining
-    - pretrain.fresh_init: Whether to initialize the model with pretrained weights or from scratch.
+    
+    - fresh_init: Whether to initialize the model with pretrained weights or from scratch.
+    - only_last_layers_tunable: Whether to only train the last layers of the model and
+        keep the first ones fixed.
 """
 train_config_base = {
     "run_label": "MyExperimentName",
@@ -39,16 +42,17 @@ train_config_base = {
         # In general, the pretraining is much more demanding than the finetuning (due to the larger dataset size)
         # In total there are 171960 samples, so fractions correspond like this
         # (make sure to adapt the number of epochs accordingly for a fair comparison):
-        "use_fraction": 0.072691,  # 10,000 samples
+        # "use_fraction": 1,
+        # "use_fraction": 0.072691,  # 10,000 samples
         # "use_fraction": 0.174461, # 30,000 samples
         # "use_fraction": 0.348922, # 60,000 samples
-        # "use_fraction": 0.581531, # 100,000 samples
+        "use_fraction": 0.581531,  # 100,000 samples
         "task": None,
-        "epochs": 3,
+        "epochs": 5,
         "lr": 0.0001,
-        "batch_size": 12,
-        "fresh_init": False,
     },
+    "fresh_init": False,
+    "only_last_layers_tunable": True,
 }
 
 tc_no_pretrain = deepcopy(train_config_base)
