@@ -1,6 +1,9 @@
 import itertools
+import json
+import random
 from tqdm import tqdm
 import torch
+import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 from dataset_binary import OxfordPetsDatasetBinary ,get_transforms
@@ -73,7 +76,9 @@ def test_model(model, dataloader, device, classes_name):
     plt.figure(figsize=(10, 10))
     plot_confusion_matrix(cm, classes=classes_name, title='Confusion matrix')
 
-    plt.show()
+    # plt.show()
+
+    return accuracy
 
 def train(model, num_epochs, dataset, device):
     train_loader, val_loader, test_loader = load_dataset(dataset)
@@ -103,14 +108,32 @@ def train(model, num_epochs, dataset, device):
         accuracy = 100 * correct / total
         print(f'Epoch: {epoch + 1}/{num_epochs}, Loss: {loss.item():.4f}, Accuracy: {accuracy:.2f}%')
 
-    test_model(model, test_loader, device, dataset.classes)
+    accuracy = test_model(model, test_loader, device, dataset.classes)
     # torch.save(model.state_dict(), 'resnet18_binary.pth')
     # torch.save(model.state_dict(), 'resnet34_binary.pth')
     # torch.save(model.state_dict(), 'resnet50_binary.pth')
     torch.save(model.state_dict(), 'E_task/resnet18_multiclass.pth')
 
-
+    return accuracy
+    
+def finetune_layers(dataset, device):
+    # list of layers to finetune
+    num_layers_to_unfreeze = [i for i in range(0, 62)]
+    # dict layer accuracy
+    layer_accuracy = {}
+    for num_layers in num_layers_to_unfreeze:
+        print(f'Finetuning last {num_layers} layers')
+        model = OxfordPetsModel(num_classes=len(dataset.classes), num_layers_to_unfreeze=num_layers).to(device)
+        accuracy = train(model, num_epochs=10, dataset=dataset, device=device)
+        layer_accuracy[num_layers] = accuracy
+        # write dict to txt file
+        with open('E_task/layer_accuracy.txt', 'w') as f:
+            f.write(str(layer_accuracy))
+    
 if __name__ == '__main__':
+    random.seed(42)
+    np.random.seed(42)
+    torch.manual_seed(42)
     '''For NVIDIA GPU'''
     # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     '''For macOS'''
@@ -122,5 +145,9 @@ if __name__ == '__main__':
     # for multiclass classification
     dataset = OxfordPetsDatasetMulti(root=DATASET_PATH, transform=get_transforms())
 
-    model = OxfordPetsModel(num_classes=dataset.classes).to(device)
-    train(model, num_epochs=10, dataset=dataset, device=device)
+    # model = OxfordPetsModel(num_classes=len(dataset.classes), num_layers_to_unfreeze=0).to(device)
+    # train(model, num_epochs=10, dataset=dataset, device=device)
+
+    finetune_layers(dataset, device)
+
+    
