@@ -2,6 +2,8 @@ import re
 import ast
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import seaborn as sns
 
 def load_data(file_name):
     # Define regular expressions to match the dictionary format
@@ -65,6 +67,38 @@ def parse_accuracy_data(filename):
 
     return avg_layer_accuracies
 
+def plot_heatmap(filename):
+    with open(filename, 'r') as f:
+        raw_data = f.read()
+
+    # Remove the 'tensor' and 'device' parts from the data
+    cleaned_data = re.sub(r'tensor\(([\d\.]+), device=\'mps:0\'\)', r'\1', raw_data)
+
+    # Parse the cleaned data into a dictionary
+    data_dict = ast.literal_eval(cleaned_data)
+
+    # Initialize empty dataframe
+    df = pd.DataFrame(columns=['Learning Rate', 'Scheduler', 'Accuracy'])
+
+    # Fill dataframe with data
+    for k, v in data_dict.items():
+        lr, sched = k
+        acc = v # Convert tensor to a Python number
+        # add data to dataframe
+        df = pd.concat([df, pd.DataFrame([[lr, sched, acc]], columns=['Learning Rate', 'Scheduler', 'Accuracy'])], ignore_index=True)
+
+    # Create a pivot table from the dataframe
+    pivot = df.pivot(index='Learning Rate', columns='Scheduler', values='Accuracy')
+    # replace NaN column name with 'None' string
+    pivot.columns = pivot.columns.fillna('None')
+    # plot heatmap with two decimal digits for accuracy
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(pivot, annot=True, fmt='.2f', cmap='YlGnBu', cbar_kws={'label': 'Accuracy'})
+    plt.show()
+    
+    
+
+
 
 
 if __name__ == "__main__":
@@ -75,3 +109,4 @@ if __name__ == "__main__":
     average = parse_accuracy_data('E_task/first_10_layer_accuracy.txt')
     # dispòay the average accuracy for each layer as a bar chart
     plot_data(average)
+    plot_heatmap('E_task/grid_search.txt')

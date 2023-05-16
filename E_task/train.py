@@ -1,5 +1,4 @@
 import itertools
-import json
 import random
 from tqdm import tqdm
 import torch
@@ -80,11 +79,22 @@ def test_model(model, dataloader, device, classes_name):
 
     return accuracy
 
-def train(model, num_epochs, dataset, device):
+def train(model, num_epochs, dataset, device, lr, scheduler=None):
     train_loader, val_loader, test_loader = load_dataset(dataset)
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=0.001)
+    optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=lr)
 
+    if scheduler == 'StepLR':
+        lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+    elif scheduler == 'ExponentialLR':
+        lr_scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
+    elif scheduler == 'CosineAnnealingLR':
+        lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
+    elif scheduler == 'ReduceLROnPlateau':
+        lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=2, verbose=True)
+    else:
+        lr_scheduler = None
+    
     for epoch in tqdm(range(num_epochs)):
         model.train()
         for inputs, labels in train_loader:
@@ -94,6 +104,12 @@ def train(model, num_epochs, dataset, device):
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
+        if lr_scheduler is not None:
+            if scheduler == 'ReduceLROnPlateau':
+                lr_scheduler.step(loss)
+            else:
+                lr_scheduler.step()
+
         model.eval()
         correct = 0
         total = 0
@@ -151,6 +167,22 @@ def fine_tune_last_10(dataset, device):
         # write dict to txt file
         with open('E_task/first_10_layer_accuracy.txt', 'w') as f:
             f.write(str(layer_seed_accuracy))
+
+def grid_search_lr(dataset, device):
+    learning_rates = [0.1, 0.01, 0.001, 0.0001, 0.00001]
+    schedulers = [None, 'StepLR', 'ExponentialLR', 'CosineAnnealingLR', 'ReduceLROnPlateau']
+
+    results = {}
+
+    for lr in learning_rates:
+        for scheduler in schedulers:
+            print(f'Training with learning rate {lr} and scheduler {scheduler}')
+            model = OxfordPetsModel(num_classes=len(dataset.classes), num_layers_to_unfreeze=0).to(device)
+            accuracy = train(model, num_epochs=10, dataset=dataset, device=device, lr=lr, scheduler=scheduler)
+            results[(lr, scheduler)] = accuracy
+    # write dict to txt file
+    with open('E_task/grid_search.txt', 'w') as f:
+        f.write(str(results))
     
 if __name__ == '__main__':
     random.seed(42)
@@ -171,6 +203,6 @@ if __name__ == '__main__':
     # train(model, num_epochs=10, dataset=dataset, device=device)
 
     # finetune_layers(dataset, device)
-    fine_tune_last_10(dataset, device)
-
+    # fine_tune_last_10(dataset, device)
+    grid_search_lr(dataset, device)
     
