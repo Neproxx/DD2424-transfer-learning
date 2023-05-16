@@ -52,7 +52,7 @@ train_config_base = {
         "lr": 0.0001,
     },
     "fresh_init": False,
-    "only_last_layers_tunable": True,
+    "only_last_layers_tunable": False,
 }
 
 tc_no_pretrain = deepcopy(train_config_base)
