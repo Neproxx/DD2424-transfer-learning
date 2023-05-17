@@ -1,12 +1,14 @@
+import copy
 import itertools
 import random
 from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, random_split
-from dataset_binary import OxfordPetsDatasetBinary ,get_transforms
-from dataset_multi import OxfordPetsDatasetMulti
+from torch.utils.data import DataLoader, random_split, Subset
+from dataset_binary import OxfordPetsDatasetBinary, get_transforms 
+from dataset_multi import OxfordPetsDatasetMulti, get_transforms_augmentation
+from utils import show_images
 from model import OxfordPetsModel
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
@@ -48,6 +50,45 @@ def load_dataset(dataset):
 
     return train_loader, val_loader, test_loader
 
+def load_dataset_augmentation(dataset):
+    full_dataset = dataset
+    train_size = int(0.75 * len(full_dataset))
+    val_test_size = len(full_dataset) - train_size
+    val_size = test_size = int(val_test_size / 2)
+    
+    train_indices, val_test_indices = random_split(range(len(full_dataset)), [train_size, val_test_size])
+    val_indices, test_indices = random_split(val_test_indices, [val_size, test_size])
+
+    # Create data subsets
+    train_dataset = Subset(full_dataset, train_indices)
+    val_dataset = Subset(full_dataset, val_indices)
+    test_dataset = Subset(full_dataset, test_indices)
+
+    # variables flip, crop, rotate which are true with probability 0.5
+    flip = random.random() > 0.5
+    crop = random.random() > 0.5
+    rotation = random.random() > 0.5
+
+    # Apply transformations
+    train_dataset.dataset = copy.deepcopy(full_dataset)
+    train_dataset.dataset.transform = get_transforms_augmentation(flip=flip, crop=crop, rotation=rotation)
+    val_dataset.dataset = copy.deepcopy(full_dataset)
+    val_dataset.dataset.transform = get_transforms()
+    test_dataset.dataset = copy.deepcopy(full_dataset)
+    test_dataset.dataset.transform = get_transforms()
+
+    print(train_dataset.dataset.transform)
+    print(val_dataset.dataset.transform)
+
+    # Create data loaders
+    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
+
+    show_images(train_dataset)
+
+    return train_loader, val_loader, test_loader
+
 def test_model(model, dataloader, device, classes_name):
     model.eval()
     running_corrects = 0
@@ -79,8 +120,11 @@ def test_model(model, dataloader, device, classes_name):
 
     return accuracy
 
-def train(model, num_epochs, dataset, device, lr, scheduler=None):
-    train_loader, val_loader, test_loader = load_dataset(dataset)
+def train(model, num_epochs, dataset, device, lr, scheduler=None, augmentation=False):
+    if augmentation:
+        train_loader, val_loader, test_loader = load_dataset_augmentation(dataset)
+    else:
+        train_loader, val_loader, test_loader = load_dataset(dataset)
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=lr)
 
@@ -143,7 +187,7 @@ def finetune_layers(dataset, device):
         accuracy = train(model, num_epochs=10, dataset=dataset, device=device)
         layer_accuracy[num_layers] = accuracy
         # write dict to txt file
-        with open('E_task/layer_accuracy.txt', 'w') as f:
+        with open('E_task/results/layer_accuracy.txt', 'w') as f:
             f.write(str(layer_accuracy))
 
 def fine_tune_last_10(dataset, device):
@@ -165,7 +209,7 @@ def fine_tune_last_10(dataset, device):
             layer_accuracy[num_layers] = accuracy
         layer_seed_accuracy[seed] = layer_accuracy
         # write dict to txt file
-        with open('E_task/first_10_layer_accuracy.txt', 'w') as f:
+        with open('E_task/results/first_10_layer_accuracy.txt', 'w') as f:
             f.write(str(layer_seed_accuracy))
 
 def grid_search_lr(dataset, device):
@@ -181,7 +225,7 @@ def grid_search_lr(dataset, device):
             accuracy = train(model, num_epochs=10, dataset=dataset, device=device, lr=lr, scheduler=scheduler)
             results[(lr, scheduler)] = accuracy
     # write dict to txt file
-    with open('E_task/grid_search.txt', 'w') as f:
+    with open('E_task/results/grid_search.txt', 'w') as f:
         f.write(str(results))
     
 if __name__ == '__main__':
@@ -197,12 +241,16 @@ if __name__ == '__main__':
     # for binary classification
     # dataset = OxfordPetsDatasetBinary(root=DATASET_PATH, transform=get_transforms())
     # for multiclass classification
-    dataset = OxfordPetsDatasetMulti(root=DATASET_PATH, transform=get_transforms())
+    # dataset = OxfordPetsDatasetMulti(root=DATASET_PATH, transform=get_transforms())
 
     # model = OxfordPetsModel(num_classes=len(dataset.classes), num_layers_to_unfreeze=0).to(device)
     # train(model, num_epochs=10, dataset=dataset, device=device)
 
     # finetune_layers(dataset, device)
     # fine_tune_last_10(dataset, device)
-    grid_search_lr(dataset, device)
+    # grid_search_lr(dataset, device)
+
+    dataset_aug = OxfordPetsDatasetMulti(root=DATASET_PATH)
+    model = OxfordPetsModel(num_classes=len(dataset_aug.classes), num_layers_to_unfreeze=0).to(device)
+    train(model, num_epochs=10, dataset=dataset_aug, device=device, lr=0.001, scheduler=None, augmentation=True)
     

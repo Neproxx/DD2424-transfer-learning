@@ -59,3 +59,32 @@ def get_transforms():
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
+
+def get_transforms_augmentation(flip: bool = True, rotation: bool = True, crop: bool = True):
+    transformations = [transforms.Resize((224, 224))]
+
+    if flip:
+        transformations.append(transforms.RandomHorizontalFlip())
+    if rotation:
+        transformations.append(transforms.RandomRotation(20))
+    if crop:
+        transformations.append(transforms.RandomResizedCrop(224))
+
+    transformations.extend([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+
+    return transforms.Compose(transformations)
+
+#     return transforms.Compose(transformations)
+
+# def get_transforms_augmentation():
+#     return transforms.Compose([
+#         transforms.Resize((224, 224)),
+#         transforms.RandomHorizontalFlip(),
+#         transforms.RandomRotation(20),
+#         transforms.RandomResizedCrop(224),
+#         transforms.ToTensor(),
+#         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+# ])

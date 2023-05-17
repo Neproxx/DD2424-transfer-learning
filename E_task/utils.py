@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import torch
 
 def load_data(file_name):
     # Define regular expressions to match the dictionary format
@@ -96,17 +97,32 @@ def plot_heatmap(filename):
     sns.heatmap(pivot, annot=True, fmt='.2f', cmap='YlGnBu', cbar_kws={'label': 'Accuracy'})
     plt.show()
     
+def show_images(dataset, num_images=20):
+    fig = plt.figure(figsize=(20, 4))
+    mean = torch.tensor([0.485, 0.456, 0.406])
+    std = torch.tensor([0.229, 0.224, 0.225])
     
+    # Randomly select num_images indices from the dataset
+    indices = np.random.choice(len(dataset), num_images, replace=False)
+    
+    for i, idx in enumerate(indices):
+        input, _ = dataset[idx]
+        ax = fig.add_subplot(2, num_images//2, i + 1, xticks=[], yticks=[])
+        input = input * std[..., None, None] + mean[..., None, None]  # denormalize
+        input = input.permute(1, 2, 0)  # switch from C,H,W to H,W,C
+        input = torch.clamp(input, 0, 1)
+        ax.imshow(input.numpy())
+    plt.show()
 
 
 
 
 if __name__ == "__main__":
-    data = load_data('E_task/layer_accuracy.txt')
+    data = load_data('E_taskresults//layer_accuracy.txt')
     plot_data(data)
     # print best accuracy and corresponding number of layers
     print(max(data.values()), max(data, key=data.get))
-    average = parse_accuracy_data('E_task/first_10_layer_accuracy.txt')
+    average = parse_accuracy_data('E_task/results/first_10_layer_accuracy.txt')
     # dispòay the average accuracy for each layer as a bar chart
     plot_data(average)
-    plot_heatmap('E_task/grid_search.txt')
+    plot_heatmap('E_task/results/grid_search.txt')
