@@ -6,6 +6,9 @@ import pandas as pd
 import seaborn as sns
 import torch
 
+sns.set(font_scale=1.2)
+palette = sns.color_palette("tab10", n_colors=10)
+
 def load_data(file_name):
     # Define regular expressions to match the dictionary format
     key_pattern = re.compile(r"(\d+): tensor")
@@ -30,15 +33,14 @@ def plot_data(data):
     accuracies = list(data.values())
 
     fig, ax = plt.subplots()
-    ax.plot(layers, accuracies, marker='o', color='orange')
+    ax.plot(layers, accuracies, marker='o', color=palette[0])
     ax.set_xlabel('Number of Layers Finetuned')
     ax.set_ylabel('Accuracy')
-    ax.set_title('Accuracy vs. Number of Layers Finetuned')
     ax.grid(True)
     
     # Set the background color of the plot area to gray
-    ax.set_facecolor('gainsboro')
-
+    # ax.set_facecolor('gainsboro')
+    plt.tight_layout()
     plt.show()
 
 def parse_accuracy_data(filename):
@@ -95,6 +97,7 @@ def plot_heatmap(filename):
     # plot heatmap with two decimal digits for accuracy
     plt.figure(figsize=(10, 8))
     sns.heatmap(pivot, annot=True, fmt='.2f', cmap='YlGnBu', cbar_kws={'label': 'Accuracy'})
+    plt.tight_layout()
     plt.show()
     
 def show_images(dataset, num_images=20):
@@ -114,15 +117,58 @@ def show_images(dataset, num_images=20):
         ax.imshow(input.numpy())
     plt.show()
 
+def plot_augmentation(filename):
+    with open(filename, 'r') as f:
+        raw_data = f.read()
 
+    # Remove the 'tensor' and 'device' parts from the data
+    cleaned_data = re.sub(r'tensor\(([\d\.]+), device=\'mps:0\'\)', r'\1', raw_data)
+
+    # Parse the cleaned data into a dictionary
+    data_dict = ast.literal_eval(cleaned_data)
+
+    # Convert dictionary to DataFrame
+    index = ['flip', 'rotation', 'crop']
+    df = pd.DataFrame(list(data_dict.keys()), columns=index)
+    df['accuracy'] = list(data_dict.values())
+
+    # Replace booleans with integers for the purpose of creating labels
+    df.replace({False: 0, True: 1}, inplace=True)
+
+    # Creating a new DataFrame for the labels
+    df_labels = df.copy()
+
+    # Create the labels
+    df_labels['label'] = df_labels[['flip', 'rotation', 'crop']].apply(
+        lambda row: '\n'.join(row.index[row.astype(bool)]), axis=1
+    )
+
+    plt.figure(figsize=(9, 6))
+
+    # Create the bar chart
+    bars = plt.bar(df_labels.index, df_labels['accuracy'], color=palette[0])
+
+    # Label the x-axis
+    plt.xlabel('Augmentation')
+
+    # Label the y-axis
+    plt.ylabel('Accuracy')
+
+    plt.xticks(rotation=90)
+
+    # Display the plot
+
+    plt.tight_layout()
+    plt.show()
 
 
 if __name__ == "__main__":
-    data = load_data('E_taskresults//layer_accuracy.txt')
-    plot_data(data)
-    # print best accuracy and corresponding number of layers
-    print(max(data.values()), max(data, key=data.get))
-    average = parse_accuracy_data('E_task/results/first_10_layer_accuracy.txt')
-    # dispòay the average accuracy for each layer as a bar chart
-    plot_data(average)
+    # data = load_data('E_task/results/layer_accuracy.txt')
+    # plot_data(data)
+    # # print best accuracy and corresponding number of layers
+    # print(max(data.values()), max(data, key=data.get))
+    # average = parse_accuracy_data('E_task/results/first_10_layer_accuracy.txt')
+    # # dispòay the average accuracy for each layer as a bar chart
+    # plot_data(average)
     plot_heatmap('E_task/results/grid_search.txt')
+    plot_augmentation('E_task/results/grid_search_augmentation.txt')
