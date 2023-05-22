@@ -1,9 +1,12 @@
 import os
+import time
 from pathlib import Path
+import random
 import shutil
 from PIL import Image
 from typing import Callable, Optional, Any
 import torchvision.transforms as transforms
+from torchvision.transforms import RandomApply
 from torchvision.datasets import ImageFolder
 from torchvision.datasets.utils import download_and_extract_archive
 
@@ -60,13 +63,11 @@ def get_transforms():
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
 
-def get_augmentation(flip: bool = False, rotation: bool = False, crop: bool = False):
-    transforms_list = []
-    if flip:
-        transforms_list.append(transforms.RandomHorizontalFlip())
-    if rotation:
-        transforms_list.append(transforms.RandomRotation(20))
-    if crop:
-        transforms_list.append(transforms.RandomResizedCrop(224))
-    
-    return transforms.Compose(transforms_list)
+def get_augmentation(prob):
+    return transforms.Compose([
+        transforms.RandomApply([transforms.RandomHorizontalFlip(p=1), 
+                                transforms.RandomRotation(20),
+                                transforms.RandomResizedCrop(224, antialias=True)], 
+                                p=prob),
+    ])
+        

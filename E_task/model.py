@@ -25,6 +25,5 @@ class OxfordPetsModel(nn.Module):
         
         self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
 
-
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)

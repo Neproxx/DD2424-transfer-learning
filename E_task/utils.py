@@ -32,10 +32,11 @@ def plot_data(data):
     layers = list(data.keys())
     accuracies = list(data.values())
 
+    plt.figure(figsize=(9, 6))
     fig, ax = plt.subplots()
     ax.plot(layers, accuracies, marker='o', color=palette[0])
     ax.set_xlabel('Number of Layers Finetuned')
-    ax.set_ylabel('Accuracy')
+    ax.set_ylabel('Test Accuracy')
     ax.grid(True)
     
     # Set the background color of the plot area to gray
@@ -95,8 +96,10 @@ def plot_heatmap(filename):
     # replace NaN column name with 'None' string
     pivot.columns = pivot.columns.fillna('None')
     # plot heatmap with two decimal digits for accuracy
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(pivot, annot=True, fmt='.2f', cmap='YlGnBu', cbar_kws={'label': 'Accuracy'})
+    fig = plt.figure(figsize=(10, 8))
+    sns.heatmap(pivot, annot=True, fmt='.2f', cmap='YlGnBu', cbar_kws={'label': 'Test Accuracy'})
+
+    fig.autofmt_xdate(rotation=45, ha='right')
     plt.tight_layout()
     plt.show()
     
@@ -128,35 +131,22 @@ def plot_augmentation(filename):
     data_dict = ast.literal_eval(cleaned_data)
 
     # Convert dictionary to DataFrame
-    index = ['flip', 'rotation', 'crop']
-    df = pd.DataFrame(list(data_dict.keys()), columns=index)
-    df['accuracy'] = list(data_dict.values())
+    df = pd.DataFrame(list(data_dict.items()), columns=['probability', 'accuracy'])
 
-    # Replace booleans with integers for the purpose of creating labels
-    df.replace({False: 0, True: 1}, inplace=True)
-
-    # Creating a new DataFrame for the labels
-    df_labels = df.copy()
-
-    # Create the labels
-    df_labels['label'] = df_labels[['flip', 'rotation', 'crop']].apply(
-        lambda row: '\n'.join(row.index[row.astype(bool)]), axis=1
-    )
-
-    plt.figure(figsize=(9, 6))
+    # Sort by accuracy in descending order
+    df = df.sort_values('accuracy', ascending=False)
 
     # Create the bar chart
-    bars = plt.bar(df_labels.index, df_labels['accuracy'], color=palette[0])
+    plt.figure(figsize=(9, 6))
+    bars = plt.bar(df['probability'].astype(str), df['accuracy'])
 
     # Label the x-axis
-    plt.xlabel('Augmentation')
+    plt.xlabel('Probability of Augmentation')
 
     # Label the y-axis
-    plt.ylabel('Accuracy')
+    plt.ylabel('Test Accuracy')
 
-    plt.xticks(rotation=90)
-
-    # Display the plot
+    # Rotate x-axis labels
 
     plt.tight_layout()
     plt.show()
@@ -165,10 +155,10 @@ def plot_augmentation(filename):
 if __name__ == "__main__":
     # data = load_data('E_task/results/layer_accuracy.txt')
     # plot_data(data)
-    # # print best accuracy and corresponding number of layers
+    # # # print best accuracy and corresponding number of layers
     # print(max(data.values()), max(data, key=data.get))
     # average = parse_accuracy_data('E_task/results/first_10_layer_accuracy.txt')
-    # # dispòay the average accuracy for each layer as a bar chart
+    # # # dispòay the average accuracy for each layer as a bar chart
     # plot_data(average)
-    plot_heatmap('E_task/results/grid_search.txt')
-    plot_augmentation('E_task/results/grid_search_augmentation.txt')
+    # plot_heatmap('E_task/results/grid_search.txt')
+    plot_augmentation('E_task/results/grid_search_aug_prob.txt')

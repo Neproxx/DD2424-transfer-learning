@@ -36,15 +36,14 @@ def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix'
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
 
-def load_dataset(dataset, augmentation: tuple = (False, False, False)):
+def load_dataset(dataset, augmentation: float = 0.0):
     train_size = int(0.75 * len(dataset))
     val_test_size = len(dataset) - train_size
     val_size = test_size = int(val_test_size / 2)
     train_dataset, val_test_dataset = random_split(dataset, [train_size, val_test_size])
     val_dataset, test_dataset = random_split(val_test_dataset, [val_size, test_size])
 
-    flip, rotation, crop = augmentation
-    train_augmentations = get_augmentation(flip, rotation, crop) 
+    train_augmentations = get_augmentation(augmentation) 
     train_dataset.dataset.transform = transforms.Compose([train_dataset.dataset.transform, train_augmentations])
     
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
@@ -84,7 +83,7 @@ def test_model(model, dataloader, device, classes_name):
 
     return accuracy
 
-def train(model, num_epochs, dataset, device, lr, scheduler=None, augmentation: tuple = (False, False, False)):
+def train(model, num_epochs, dataset, device, lr=0.001, scheduler=None, augmentation: float = 0.0):
     train_loader, val_loader, test_loader = load_dataset(dataset, augmentation)
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=lr)
@@ -101,6 +100,7 @@ def train(model, num_epochs, dataset, device, lr, scheduler=None, augmentation: 
         lr_scheduler = None
     
     for epoch in tqdm(range(num_epochs)):
+        
         model.train()
         for inputs, labels in train_loader:
             inputs, labels = inputs.to(device), labels.to(device)
@@ -139,16 +139,19 @@ def train(model, num_epochs, dataset, device, lr, scheduler=None, augmentation: 
     
 def finetune_layers(dataset, device):
     # list of layers to finetune
-    num_layers_to_unfreeze = [i for i in range(0, 62)]
+    num_layers_to_unfreeze = [i for i in range(0, 10)]
     # dict layer accuracy
     layer_accuracy = {}
     for num_layers in num_layers_to_unfreeze:
+        random.seed(42)
+        np.random.seed(42)
+        torch.manual_seed(42)
         print(f'Finetuning last {num_layers} layers')
         model = OxfordPetsModel(num_classes=len(dataset.classes), num_layers_to_unfreeze=num_layers).to(device)
         accuracy = train(model, num_epochs=10, dataset=dataset, device=device)
         layer_accuracy[num_layers] = accuracy
         # write dict to txt file
-        with open('E_task/layer_accuracy.txt', 'w') as f:
+        with open('E_task/layer_accuracy_true.txt', 'w') as f:
             f.write(str(layer_accuracy))
 
 def fine_tune_last_10(dataset, device):
@@ -185,16 +188,16 @@ def grid_search_lr(dataset, device):
             np.random.seed(42)
             torch.manual_seed(42)
             print(f'Training with learning rate {lr} and scheduler {scheduler}')
-            model = OxfordPetsModel(num_classes=len(dataset.classes), num_layers_to_unfreeze=0).to(device)
+            model = OxfordPetsModel(num_classes=len(dataset.classes), num_layers_to_unfreeze=8).to(device)
             accuracy = train(model, num_epochs=10, dataset=dataset, device=device, lr=lr, scheduler=scheduler)
             results[(lr, scheduler)] = accuracy
     # write dict to txt file
-    with open('E_task/grid_search.txt', 'w') as f:
+    with open('E_task/grid_search2.txt', 'w') as f:
         f.write(str(results))
 
 def grid_search_aug(dataset, device):
     # list augmentation combinations
-    augmentations = [(False, False, False), (True, False, False), (False, True, False), (False, False, True), (True, True, False), (True, False, True), (False, True, True), (True, True, True)]
+    augmentations = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
 
     results = {}
 
@@ -202,13 +205,12 @@ def grid_search_aug(dataset, device):
         random.seed(42)
         np.random.seed(42)
         torch.manual_seed(42)
-        flip, rotate, crop = aug
-        print(f'Training with flip {flip}, rotate {rotate} and crop {crop}')
-        model = OxfordPetsModel(num_classes=len(dataset.classes), num_layers_to_unfreeze=0).to(device)
-        accuracy = train(model, num_epochs=10, dataset=dataset, device=device, lr=0.001, scheduler='CosineAnnealingLR', augmentation=aug)
+        print(f'Training with augmentation probability {aug}')
+        model = OxfordPetsModel(num_classes=len(dataset.classes), num_layers_to_unfreeze=8).to(device)
+        accuracy = train(model, num_epochs=10, dataset=dataset, device=device, lr=0.0001, scheduler='ExponentialLR', augmentation=aug)
         results[aug] = accuracy
     # write dict to txt file
-    with open('E_task/results/grid_search_aug.txt', 'w') as f:
+    with open('E_task/results/grid_search_aug_prob.txt', 'w') as f:
         f.write(str(results))
 
     
@@ -234,4 +236,7 @@ if __name__ == '__main__':
     # fine_tune_last_10(dataset, device)
     # grid_search_lr(dataset, device)
     grid_search_aug(dataset, device)
+
+    # model = OxfordPetsModel(num_classes=len(dataset.classes), num_layers_to_unfreeze=8).to(device)
+    # accuracy = train(model, num_epochs=10, dataset=dataset, device=device, lr=0.0001, scheduler='ExponentialLR', augmentation=0)
     
